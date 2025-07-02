@@ -33,6 +33,10 @@ npm install
 NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
+### Start project
+
+`npm run dev`
+
 Open your browser and go to `http://localhost:3000` or which localhost it's open 
 
 ### Tech Stack

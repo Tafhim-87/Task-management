@@ -5,8 +5,13 @@ import { format } from 'date-fns';
 import { Michroma } from 'next/font/google';
 import { Task } from '@/types/types';
 import AiLogo from '@/assets/AiLogo';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-
+const michroma = Michroma({
+  subsets: ['latin'],
+  weight: '400',
+});
 
 export default function TaskInputForm() {
   const [task, setTask] = useState<Omit<Task, 'id' | 'createdAt'> & { id?: string }>({
@@ -23,41 +28,40 @@ export default function TaskInputForm() {
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  //  Load tasks from localStorage on component mount
+  // Load tasks from localStorage on component mount
   useEffect(() => {
-  const savedTasks = localStorage.getItem('tasks');
-  if (savedTasks) {
-    try {
-      const parsedTasks: unknown = JSON.parse(savedTasks);
+    const savedTasks = localStorage.getItem('tasks');
+    if (savedTasks) {
+      try {
+        const parsedTasks: unknown = JSON.parse(savedTasks);
 
-      if (Array.isArray(parsedTasks)) {
-        const tasksWithDates: Task[] = parsedTasks
-          .filter(
-            (task): task is Omit<Task, 'dueDate' | 'createdAt'> & { dueDate: string; createdAt: string } =>
-              typeof task === 'object' &&
-              task !== null &&
-              'dueDate' in task &&
-              'createdAt' in task &&
-              Array.isArray(task.subtasks)
-          )
-          .map(task => ({
-            ...task,
-            dueDate: new Date(task.dueDate),
-            createdAt: new Date(task.createdAt),
-            subtasks: task.subtasks.map(subtask => ({
-              ...subtask,
-              completed: subtask.completed ?? false,
-            })),
-          }));
+        if (Array.isArray(parsedTasks)) {
+          const tasksWithDates: Task[] = parsedTasks
+            .filter(
+              (task): task is Omit<Task, 'dueDate' | 'createdAt'> & { dueDate: string; createdAt: string } =>
+                typeof task === 'object' &&
+                task !== null &&
+                'dueDate' in task &&
+                'createdAt' in task &&
+                Array.isArray(task.subtasks)
+            )
+            .map(task => ({
+              ...task,
+              dueDate: new Date(task.dueDate),
+              createdAt: new Date(task.createdAt),
+              subtasks: task.subtasks.map(subtask => ({
+                ...subtask,
+                completed: subtask.completed ?? false,
+              })),
+            }));
 
-        setTasks(tasksWithDates);
+          setTasks(tasksWithDates);
+        }
+      } catch (err) {
+        console.error("Failed to parse saved tasks", err);
       }
-    } catch (err) {
-      console.error("Failed to parse saved tasks", err);
     }
-  }
-}, []);
-
+  }, []);
 
   // Save tasks to localStorage whenever they change
   useEffect(() => {
@@ -117,7 +121,7 @@ export default function TaskInputForm() {
       
       const prompt = `Based on the task "${task.title}"${
         task.description ? ` and description "${task.description}"` : ''
-    }, suggest 5 specific subtasks as a bullet point list. Return only the main text.`;  {/* anyone can change this suggest specific subtasks */}
+      }, suggest 5 specific subtasks as a bullet point list. Return only the main text.`;
 
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
@@ -137,7 +141,6 @@ export default function TaskInputForm() {
       );
 
       if (!response.ok) {
-        // const errorData = await response.json();
         throw new Error('This feature is currently unavailable. Please try again later.');
       }
 
@@ -157,7 +160,7 @@ export default function TaskInputForm() {
             ...suggestedSubtasks.map((text: string) => ({ 
               id: crypto.randomUUID(), 
               text,
-              completed: false // Initialize as not completed
+              completed: false
             }))
           ].slice(0, 5)
         }));
@@ -176,7 +179,6 @@ export default function TaskInputForm() {
     e.preventDefault();
     
     if (isEditing && task.id) {
-      // Update existing task
       setTasks(prev => prev.map(t => 
         t.id === task.id ? {
           ...task,
@@ -186,7 +188,6 @@ export default function TaskInputForm() {
         } as Task : t
       ));
     } else {
-      // Add new task
       const newTask: Task = {
         ...task,
         id: crypto.randomUUID(),
@@ -196,7 +197,6 @@ export default function TaskInputForm() {
       setTasks(prev => [newTask, ...prev]);
     }
     
-    // Reset form
     setTask({
       title: '',
       description: '',
@@ -217,19 +217,45 @@ export default function TaskInputForm() {
   };
 
   const deleteTask = (id: string) => {
-    if (confirm('Are you sure you want to delete this task?')) {
-      setTasks(prev => prev.filter(task => task.id !== id));
-      if (isEditing && task.id === id) {
-        setTask({
-          title: '',
-          description: '',
-          status: 'pending',
-          dueDate: new Date(),
-          subtasks: [],
-        });
-        setIsEditing(false);
+    toast(
+      <div className="flex flex-col gap-2">
+        <p>Are you sure you want to delete this task?</p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setTasks(prev => prev.filter(task => task.id !== id));
+              if (isEditing && task.id === id) {
+                setTask({
+                  title: '',
+                  description: '',
+                  status: 'pending',
+                  dueDate: new Date(),
+                  subtasks: [],
+                });
+                setIsEditing(false);
+              }
+              toast.dismiss();
+            }}
+            className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+          >
+            Confirm
+          </button>
+          <button
+            onClick={() => toast.dismiss()}
+            className="bg-gray-200 text-gray-800 px-3 py-1 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>,
+      {
+        position: "top-center",
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
       }
-    }
+    );
   };
 
   const cancelEdit = () => {
@@ -259,7 +285,6 @@ export default function TaskInputForm() {
         )}
 
         <div className="grid gap-6 mb-6 md:grid-cols-2 container mr-auto">
-          {/* Title Field */}
           <div className="md:col-span-2">
             <label htmlFor="title" className="block mb-2 text-sm font-medium">
               Title *
@@ -276,7 +301,6 @@ export default function TaskInputForm() {
             />
           </div>
 
-          {/* Description Field */}
           <div className="md:col-span-2">
             <label htmlFor="description" className="block mb-2 text-sm font-medium">
               Description
@@ -292,7 +316,6 @@ export default function TaskInputForm() {
             />
           </div>
 
-          {/* Status Field */}
           <div>
             <label htmlFor="status" className="block mb-2 text-sm font-medium">
               Status
@@ -309,7 +332,6 @@ export default function TaskInputForm() {
             </select>
           </div>
 
-          {/* Due Date Field */}
           <div>
             <label className="block mb-2 text-sm font-medium">
               Due Date
@@ -338,7 +360,6 @@ export default function TaskInputForm() {
             )}
           </div>
 
-          {/* Subtasks Section */}
           <div className="flex flex-col gap-4 md:col-span-2">
             <div className="flex justify-between items-center mb-2">
               <label className="block text-sm font-medium">
@@ -364,7 +385,6 @@ export default function TaskInputForm() {
               </button>
             </div>
             
-            {/* Subtask Input */}
             <div className="flex flex-col lg:flex-row gap-2 mb-3">
               <input
                 type="text"
@@ -385,7 +405,6 @@ export default function TaskInputForm() {
               </button>
             </div>
             
-            {/* Subtask Tags */}
             <div className="flex flex-wrap gap-2 min-h-10">
               {task.subtasks.map(subtask => (
                 <div key={subtask.id} className="flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm">
@@ -424,14 +443,12 @@ export default function TaskInputForm() {
         </div>
       </form>
 
-      {/* viewing task List */}
       {recentTasks.length > 0 && (
         <section className="mt-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold" style={{ fontSize: 'clamp(1.25rem, 3vw, 1.5rem)' }}>
               Recent Tasks ({tasks.length} total)
             </h2>
-            
           </div>
           <div className="grid gap-4">
             {recentTasks.map((task) => (
@@ -497,14 +514,7 @@ export default function TaskInputForm() {
           </div>
         </section>
       )}
+      <ToastContainer />
     </section>
   );
 }
-
-
-// font family
-
-const michroma = Michroma({
-    subsets: ['latin'],
-    weight: '400',
-  });
