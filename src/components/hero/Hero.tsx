@@ -140,9 +140,9 @@ export default function TaskInputForm() {
         }
       );
 
-      if (!response.ok) {
-        throw new Error('This feature is currently unavailable. Please try again later.');
-      }
+      // if (!response.ok) {
+      //   throw new Error('This feature is currently unavailable. Please try again later.');
+      // }
 
       const data = await response.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -165,7 +165,7 @@ export default function TaskInputForm() {
           ].slice(0, 5)
         }));
       } else {
-        setError('No subtasks were generated. Please try again.');
+        setError('This feature is currently unavailable. Please try again later.');
       }
     } catch (err) {
       console.error("Error generating subtasks:", err);
