@@ -46,7 +46,6 @@ TypeScript
 Tailwind CSS
 
 Google Gemini API (for subtask generation)
-<<<<<<< HEAD
 
 date-fns (for formatting dates)
 
@@ -59,18 +58,3 @@ Subtasks are limited to a maximum of 5 per task.
 The title field is required before you can use AI-generated subtasks.
 
 This project uses client-side storage (localStorage), so tasks are not persisted across devices.
-
-=======
-
-date-fns (for formatting dates)
-
-LocalStorage (for task persistence)
-
-### Notes
-
-Subtasks are limited to a maximum of 5 per task.
-
-The title field is required before you can use AI-generated subtasks.
-
-This project uses client-side storage (localStorage), so tasks are not persisted across devices.
->>>>>>> f286b0a (error resolve)
