@@ -137,7 +137,7 @@ export default function TaskInputForm() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
+        // const errorData = await response.json();
         throw new Error('This feature is currently unavailable. Please try again later.');
       }
 
